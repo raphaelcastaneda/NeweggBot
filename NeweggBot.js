@@ -43,7 +43,7 @@ async function run () {
     const page = await browser.newPage()
 	
     while (true) {
-		await page.goto('https://secure.newegg.com/NewMyAccount/AccountLogin.aspx?nextpage=https%3a%2f%2fwww.newegg.com%2f' , {waitUntil: 'load' })
+		await page.goto('https://secure.newegg.ca/NewMyAccount/AccountLogin.aspx?nextpage=https%3a%2f%2fwww.newegg.ca%2f' , {waitUntil: 'load' })
 		if (page.url().includes('signin')) {
 			await page.waitForSelector('button.btn.btn-orange')
 			await page.type('#labeled-input-signEmail', config.email)
@@ -83,14 +83,14 @@ async function run () {
 	while (true)
 	{
 		try {
-			await page.goto('https://secure.newegg.com/Shopping/AddtoCart.aspx?Submit=ADD&ItemList=' + config.item_number, { waitUntil: 'load' })
+			await page.goto('https://secure.newegg.ca/Shopping/AddtoCart.aspx?Submit=ADD&ItemList=' + config.item_number, { waitUntil: 'load' })
 			if (page.url().includes("ShoppingCart")) {
 				var check = await check_cart(page)
 				if (check) {
 					break
 				}
 			} else if (page.url().includes("ShoppingItem")) {
-				await page.goto('https://secure.newegg.com/Shopping/ShoppingCart.aspx', { waitUntil: 'load' })
+				await page.goto('https://secure.newegg.ca/Shopping/ShoppingCart.aspx', { waitUntil: 'load' })
 				var check = await check_cart(page)
 				if (check){
 					break
