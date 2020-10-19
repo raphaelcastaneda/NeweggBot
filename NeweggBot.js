@@ -84,7 +84,7 @@ async function run () {
 	{
 		try {
 			await page.goto('https://secure.newegg.com/Shopping/AddtoCart.aspx?Submit=ADD&ItemList=' + config.item_number, { waitUntil: 'load' })
-			if (page.url().includes("ShoppingCart")) {
+			if (page.url().includes("shoppingcart")) {
 				var check = await check_cart(page)
 				if (check) {
 					break
