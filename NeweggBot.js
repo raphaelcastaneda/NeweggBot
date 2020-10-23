@@ -36,6 +36,8 @@ async function check_cart(page) {
 async function run() {
   await report("Started");
   const browser = await puppeteer.launch({
+    args: [ '--js-flags=--expose-gc' ],
+    devtools: false,
     headless: false,
     product: "chrome",
     defaultViewport: { width: 1366, height: 768 },
@@ -92,6 +94,7 @@ async function run() {
   await report("Checking for card");
 
   while (true) {
+    await page.evaluate(() => gc());
     try {
       if (global.gc) {global.gc();}
     } catch(e) {
