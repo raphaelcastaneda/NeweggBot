@@ -38,10 +38,10 @@ async function check_cart(page) {
 async function run() {
   await report("Started");
   const browser = await puppeteer.launch({
-    args: [ '--js-flags=--expose-gc' ],
-    devtools: false,
+    args: ["--js-flags=--expose-gc"],
     headless: false,
     product: "chrome",
+    //executablePath:'/usr/bin/firefox-trunk',
     defaultViewport: { width: 1366, height: 768 },
   });
   const page = await browser.newPage();
@@ -95,12 +95,20 @@ async function run() {
   await report("Logged in");
   await report("Checking for card");
 
+  const startTime = new Date();
   while (true) {
-    await page.evaluate(() => gc());
     try {
-      if (global.gc) {global.gc();}
-    } catch(e) {
-      console.log("`node --expose-gc`")
+      await page.evaluate(() => gc());
+    } catch (e) {
+      await report("Browser failed to garbage collect");
+      await report(e);
+    }
+    try {
+      if (global.gc) {
+        global.gc();
+      }
+    } catch (e) {
+      console.log("`node --expose-gc`");
       process.exit();
     }
     try {
@@ -178,10 +186,27 @@ async function run() {
   } catch (err) {}
 
   if (config.auto_submit == "true") {
-    await page.click("#SubmitOrder");
+    var order_button = await page.$(
+      "div.summary-actions > button.btn-primary",
+      { timeout: 100 }
+    );
+    await checkout_button.evaluate((node) => node.click());
   }
   await report("Completed purchase");
   //await browser.close()
+  return true;
 }
 
-run();
+// Wrap run() so that the browser can get restarted to clear RAM
+async function get_card() {
+  var got_card = false;
+  while (true) {
+    report('running')
+    got_card = await run();
+    if (got_card == true){
+      report(got_card)
+      break;
+    }
+  }
+}
+get_card()
