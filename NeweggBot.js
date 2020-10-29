@@ -8,15 +8,17 @@ async function report(log) {
 async function check_cart(page) {
   await page.waitForTimeout(250);
   try {
-    await page.waitForSelector("span.amount", { timeout: 1000 });
-    var element = await page.$("span.amount");
+    await page.waitForSelector("form li.price-current", { timeout: 1000 });
+    var element = await page.$("form li.price-current");
     var text = await page.evaluate((element) => element.textContent, element);
+    await report("Card costs: " + text);
     if (parseInt(text.split("$")[1]) > config.price_limit) {
       await report("Price exceeds limit, removing from cart");
       var button = await page.$$("button.btn.btn-mini");
       while (true) {
         try {
-          await button[1].click();
+          await button[2].evaluate((node) => node.click());
+          return false;
         } catch (err) {
           break;
         }
@@ -107,16 +109,15 @@ async function run() {
           config.item_number,
         { waitUntil: "load" }
       );
-      if (page.url().includes("shoppingcart")) {
+      if (page.url().includes("shop/cart")) {
         var check = await check_cart(page);
         if (check) {
           break;
         }
       } else if (page.url().includes("ShoppingItem")) {
-        await page.goto(
-          "https://secure.newegg.com/Shopping/ShoppingCart.aspx",
-          { waitUntil: "load" }
-        );
+        await page.goto("https://secure.newegg.com/shop/cart", {
+          waitUntil: "load",
+        });
         var check = await check_cart(page);
         if (check) {
           break;
@@ -128,18 +129,39 @@ async function run() {
       continue;
     }
     await page.waitForTimeout(100);
+    var nowTime = new Date();
+    var timeDiffMinutes = Math.round((nowTime - startTime) / 1000) / 60;
+    // If browser has been open too long
+    // Close it to work around memory leak
+    if (timeDiffMinutes >= 20) {
+      await report("Killing the browser for a restart");
+      await browser.close();
+      return false;
+    }
   }
-  try {
-    await page.goto(
-      "javascript:attachDelegateEvent((function(){Biz.GlobalShopping.ShoppingCart.checkOut('True')}))",
-      { timeout: 500 }
-    );
-  } catch (err) {}
+
+  await report("Card found!");
 
   while (true) {
     try {
-      await page.waitForSelector("#cvv2Code", { timeout: 500 });
-      await page.type("#cvv2Code", config.cv2);
+      await report("Looking for checkout button");
+      await page.waitForSelector("div.summary-actions", { timeout: 500 });
+      var checkout_button = await page.$(
+        "div.summary-actions > button.btn-primary",
+        { timeout: 100 }
+      );
+      await checkout_button.evaluate((node) => node.click());
+      break;
+    } catch (err) {
+      await report(err);
+    }
+  }
+
+  while (true) {
+    try {
+      await report("Looking for cvv code");
+      await page.waitForSelector("input[placeholder=CVV2]", { timeout: 500 });
+      await page.type("input[placeholder=CVV2]", config.cv2);
       break;
     } catch (err) {}
     try {
